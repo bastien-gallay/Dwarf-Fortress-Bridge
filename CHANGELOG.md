@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.20
+
+- `df_crop set` writes a crop only into the seasons its raw lists (the game's farm panel offers it there only):
+  sweet pod set "all seasons" went into winter too, where nothing is planted. Other requested seasons are left
+  unchanged and named in a warning; a request with only off-season seasons is refused.
+- `df_crop list` reports an off-season crop in `incompatible_crops`, and `df_problems` names the plot and season.
+
 ## 1.5.19
 
 - `df_crop set` refuses a surface crop the plot's biome cannot grow. It only checked light and dark, so on a

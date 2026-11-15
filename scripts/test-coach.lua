@@ -10,7 +10,8 @@ local function run(name,params,overrides)
   for k,v in pairs(overrides or {}) do env[k]=v end
   -- shared farm helpers come from the prelude, bound to the same (fake) df/dfhack
   local fh=assert(io.open(args.root..'/lua/prelude.lua')) local src=fh:read('a') fh:close()
-  env.plot_conditions,env.crop_mismatch=assert(load(src..'\nreturn plot_conditions, crop_mismatch','prelude','t',env))()
+  env.plot_conditions,env.crop_mismatch,env.off_season,env.crop_seasons=assert(load(src..
+    '\nreturn plot_conditions, crop_mismatch, off_season, crop_seasons','prelude','t',env))()
   assert(loadfile(args.root..'/lua/'..name..'.lua','t',env))()
   return result
 end
@@ -39,6 +40,15 @@ check(bad.plot.warning and bad.plot.warning:find('No crop can grow here'),'a MOU
 biome=df.biome_type.FOREST_TEMPERATE_CONIFER
 local ok=run('crop',{action='set',plot_id=1,plant='wild carrot'},{df=fake_df,dfhack=fake_hack})
 check(ok.ok and fake.plant_id[0]>=0,'a crop of the plot biome must be accepted')
+-- a crop is written only into its own seasons (sweet pod: spring and summer)
+fake_hack.maps.getTileFlags=function() return {light=false,subterranean=true} end
+for s=0,3 do fake.plant_id[s]=-1 end
+ok=run('crop',{action='set',plot_id=1,plant='sweet pod'},{df=fake_df,dfhack=fake_hack})
+check(ok.ok and fake.plant_id[0]>=0 and fake.plant_id[1]>=0,'in-season crop must be written')
+check(fake.plant_id[2]==-1 and fake.plant_id[3]==-1,'off-season crop must not be written')
+check(ok.warning and ok.warning:find('autumn, winter unchanged'),'skipped seasons must be named')
+bad=run('crop',{action='set',plot_id=1,plant='sweet pod',seasons={'winter'}},{df=fake_df,dfhack=fake_hack})
+check(bad.error and bad.error:find('not in winter') and fake.plant_id[3]==-1,'an only off-season request must be refused')
 bad=run('items',{type='NOT_AN_ITEM_TYPE'})
 check(bad.error and bad.error:find('Unknown item type'),'invalid item filter must not broaden the search')
 local map=setmetatable({maps={getTileFlags=function() return {hidden=false,flow_size=0} end,

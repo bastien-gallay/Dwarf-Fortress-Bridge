@@ -184,6 +184,15 @@ for _, plot in ipairs(df.global.world.buildings.other.FARM_PLOT) do
     add('medium', ('Farm plot %d (%d,%d,%d): %s will never be planted. %s df_crop list shows what can grow there.'):format(
       plot.id, plot.x1, plot.y1, plot.z, table.concat(bad, ', '), why))
   end
+  local off = {}
+  for s = 0, 3 do
+    local raw = plot.plant_id[s] >= 0 and df.global.world.raws.plants.all[plot.plant_id[s]]
+    if raw and off_season(raw, s) then off[#off + 1] = ('%s in %s'):format(raw.name, SEASON_FLAGS[s]:lower()) end
+  end
+  if #off > 0 then
+    add('low', ('Farm plot %d (%d,%d,%d): %s, outside the crop\'s seasons: nothing is planted then. df_crop set a crop of that season, or fallow.'):format(
+      plot.id, plot.x1, plot.y1, plot.z, table.concat(off, ', ')))
+  end
   local pid = plot.plant_id[df.global.cur_season]
   local raw = pid >= 0 and df.global.world.raws.plants.all[pid]
   if raw and plot:getBuildStage() >= plot:getMaxBuildStage() then
