@@ -215,8 +215,13 @@ If something seems impossible without a cheat, tell the player instead.
   guarantees acceptance. Read the native profit/weight footer and merchant reply.
 - Crop assignment is rejected until the farm is built. `df_crop` lists light/dark
   incompatibilities. A roof does not turn Light surface soil into Dark underground
-  soil; use an actual dark plot for plump helmets.
+  soil; use an actual dark plot for plump helmets. A surface crop also needs the plot's
+  biome (a MOUNTAIN plot grows nothing) and is planted only in its own seasons:
+  `df_crop list` gives each plot's `plantable_now` crops.
 - Diplomats meet nobles in an office of decent quality; without one the meeting (and depot trading) stalls. `df_justice` for crimes.
+- A liaison or diplomat ready to meet only shows a DIPLOMACY button; the meeting waits until it is clicked
+  (`df_wait` reports it). Click it with `df_screen`, answer the dialog, and set the caravan requests with
+  `df_trade action=requests` (by category name: the screen's tab numbers are not the categories).
 
 ## The camera (the player is watching)
 
