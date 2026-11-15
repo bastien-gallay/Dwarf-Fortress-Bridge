@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.16
+
+- `df_noble repair` (and `appoint` / `remove`) no longer duplicates the noble responsibility index. The rebuild only
+  cleared the first responsibility, because `#` on a DFHack enum is 0, so each call appended the manager, broker,
+  bookkeeper... once more. With the manager listed 4 times, work orders stayed unvalidated for days; after the fix
+  they were validated within a game day.
+- `df_workshop` lists and queues metal weapons and armour at the Metalsmith's forge ("forge iron breastplate",
+  "forge iron pick", ...): one task per item type of the civilisation that allows metal, for each metal the fort has
+  enough free bars of. The forge used to offer only instrument parts, so a mandate for picks could not be met
+  without a work order. Bars per item follow the game's rule (MATERIAL_SIZE / 3, at least 1).
+- `df_trade select` / `deselect` check every index first and change nothing when one is out of range. Selecting the
+  last row of a side raised "index out of bounds" after the earlier rows of the same call were already marked.
+
 ## 1.5.15
 
 - `df_workshop add` queues as many jobs as fit and says so ("queued 9 of 10: the workshop holds 10 jobs and had
