@@ -10,38 +10,48 @@ local function plant_info(i)
   for _, s in ipairs({'SPRING', 'SUMMER', 'AUTUMN', 'WINTER'}) do
     if p.flags[s] then table.insert(seasons, s:lower()) end
   end
-  return {id = p.id, name = p.name, underground = p.flags.BIOME_SUBTERRANEAN_WATER or false, seasons = seasons}
+  return {id = p.id, index = i, name = p.name, underground = p.flags.BIOME_SUBTERRANEAN_WATER or false, seasons = seasons}
+end
+
+-- every crop (seed-bearing plant, trees excluded: plots never grow them) that can grow on a plot, by plant index
+local function growable(c)
+  local ok = {}
+  for i, p in ipairs(plants) do
+    if p.flags.SEED and not p.flags.TREE and not crop_mismatch(p, c) then ok[i] = true end
+  end
+  return ok
 end
 
 local function plot_info(b)
-  local crops = {}
-  local light,dark=0,0
-  for x=b.x1,b.x2 do for y=b.y1,b.y2 do
-    if dfhack.buildings.containsTile(b,x,y) then
-      local f=dfhack.maps.getTileFlags(x,y,b.z)
-      if f and not f.hidden then if f.light then light=light+1 else dark=dark+1 end end
-    end
-  end end
-  local incompatible={}
+  local c = plot_conditions(b)
+  local crops, incompatible = {}, {}
   for s = 0, 3 do
     local pi = b.plant_id[s]
     crops[SEASONS[s + 1]] = pi >= 0 and plants[pi] and plants[pi].name or 'fallow'
-    if pi>=0 and plants[pi] then
-      local needs_dark=plants[pi].flags.BIOME_SUBTERRANEAN_WATER
-      if needs_dark and light>0 or not needs_dark and dark>0 then
-        incompatible[#incompatible+1]={season=SEASONS[s+1],crop=plants[pi].name,reason='Light/dark mismatch; a selected crop is not proof that it can grow here.'}
-      end
-    end
+    local why = pi >= 0 and plants[pi] and crop_mismatch(plants[pi], c)
+    if why then incompatible[#incompatible + 1] = {season = SEASONS[s + 1], crop = plants[pi].name, reason = why} end
   end
-  local underground = try(function() return dfhack.maps.getTileFlags(b.x1, b.y1, b.z).subterranean end, false)
-  return {id = b.id, x = b.x1, y = b.y1, z = b.z, w = b.x2 - b.x1 + 1, h = b.y2 - b.y1 + 1,
-    underground = underground, built = b:getBuildStage() >= b:getMaxBuildStage(), crops = crops,
-    light_tiles=light,dark_tiles=dark,incompatible_crops=incompatible}
+  local biomes = {}
+  for bn in pairs(c.biomes) do biomes[#biomes + 1] = bn end
+  table.sort(biomes)
+  local info = {id = b.id, x = b.x1, y = b.y1, z = b.z, w = b.x2 - b.x1 + 1, h = b.y2 - b.y1 + 1,
+    underground = c.light == 0, built = b:getBuildStage() >= b:getMaxBuildStage(), crops = crops,
+    light_tiles = c.light, dark_tiles = c.dark, biomes = #biomes > 0 and biomes or nil,
+    incompatible_crops = #incompatible > 0 and incompatible or nil}
+  if not next(growable(c)) then
+    info.warning = c.light > 0 and c.dark > 0
+      and ('The plot mixes %d light and %d dark tiles: df_crop set accepts no crop here, and whatever is set grows only on the tiles that suit it. Rebuild it on one kind only.'):format(c.light, c.dark)
+      or ('No crop can grow here (biome %s): leave it fallow, or build the plot elsewhere.'):format(table.concat(biomes, ', '))
+  end
+  return info, c
 end
 
 if (ARGS.action or 'list') == 'list' then
-  local plots = {}
-  for _, b in ipairs(df.global.world.buildings.other.FARM_PLOT) do table.insert(plots, plot_info(b)) end
+  local plots, conds = {}, {}
+  for _, b in ipairs(df.global.world.buildings.other.FARM_PLOT) do
+    local info, c = plot_info(b)
+    table.insert(plots, info) conds[#plots] = c
+  end
   local seeds = {}
   for _, it in ipairs(df.global.world.items.other.SEEDS) do
     -- in_building = already planted in a plot: not stock
@@ -54,13 +64,20 @@ if (ARGS.action or 'list') == 'list' then
       end
     end
   end
-  -- seeds no plot can grow (surface crops in an all-underground fort, or the reverse) are only counted
-  local has_under, has_surface = false, false
-  for _, p in ipairs(plots) do if p.underground then has_under = true else has_surface = true end end
+  -- each plot names the stocked seeds it can grow; seeds no plot can grow are only counted
+  local fits = {}
+  for i, p in ipairs(plots) do
+    local ok = growable(conds[i])
+    local names = {}
+    for _, v in pairs(seeds) do
+      if ok[v.index] then names[#names + 1] = v.name fits[v.id] = true end
+    end
+    table.sort(names)
+    p.growable_seeds = names
+  end
   local list, other = {}, 0
-  for _, v in pairs(seeds) do
-    if #plots == 0 or (v.underground and has_under) or (not v.underground and has_surface) then table.insert(list, v)
-    else other = other + v.seeds end
+  for k, v in pairs(seeds) do
+    if #plots == 0 or fits[k] then table.insert(list, v) else other = other + v.seeds end
   end
   table.sort(list, function(a, b) return a.seeds > b.seeds end)
   -- a season set to a crop with no seeds grows nothing (farmers cancel planting)
@@ -75,8 +92,7 @@ if (ARGS.action or 'list') == 'list' then
     end
   end
   emit({plots = plots, seeds_in_stock = list,
-    seeds_for_other_plots = other > 0 and (other .. ' seeds of crops no current plot can grow (' ..
-      (has_under and 'surface' or 'underground') .. ' crops)') or nil}) return
+    seeds_for_other_plots = other > 0 and (other .. ' seeds of crops no current plot can grow (trees, or wrong light or biome)') or nil}) return
 end
 
 -- set
@@ -99,21 +115,9 @@ if want ~= '' and want ~= 'FALLOW' then
   if pid < 0 then emit({error = 'No plant matching ' .. want}) return end
 end
 local seasons = ARGS.seasons or SEASONS
-if pid>=0 then
-  local needs_dark=plants[pid].flags.BIOME_SUBTERRANEAN_WATER
-  local bad=0
-  for x=b.x1,b.x2 do for y=b.y1,b.y2 do
-    if dfhack.buildings.containsTile(b,x,y) then
-      local f=dfhack.maps.getTileFlags(x,y,b.z)
-      if f and (needs_dark and f.light or not needs_dark and not f.light) then bad=bad+1 end
-    end
-  end end
-  if bad>0 then
-    local why = needs_dark
-      and '%s is an underground crop and needs dark tiles. Roofing a surface plot does not remove its Light attribute. Use a genuinely dark underground plot.'
-      or '%s is a surface crop and needs light tiles: it cannot grow on an underground plot. Plant it on a surface plot, or pick an underground crop here.'
-    emit({error=('Crop incompatible with %d plot tile(s). ' .. why):format(bad, plants[pid].name),plot=plot_info(b)}) return
-  end
+if pid >= 0 then
+  local why = crop_mismatch(plants[pid], plot_conditions(b))
+  if why then emit({error = 'Crop cannot grow on this plot. ' .. why, plot = plot_info(b)}) return end
 end
 for _, s in ipairs(seasons) do
   for i, name in ipairs(SEASONS) do

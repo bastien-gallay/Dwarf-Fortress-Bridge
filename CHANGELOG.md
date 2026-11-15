@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.19
+
+- `df_crop set` refuses a surface crop the plot's biome cannot grow. It only checked light and dark, so on a
+  MOUNTAIN plot (where the game offers only "Leave fallow") it accepted bitter vetch, strawberry and wild carrot,
+  and nothing was ever planted. A surface crop needs the `BIOME_<type>` flag of the plot's biome.
+- `df_crop list` gives each plot its biome and `growable_seeds` (the stocked seeds it can grow), and warns when
+  no crop can grow there: a MOUNTAIN plot, or one that mixes light and dark tiles. Tree seeds no longer count as
+  plantable.
+- `df_problems` names a plot whose crop suits none of its tiles (wrong light or biome): it would stay bare.
+
 ## 1.5.18
 
 - `df_workshop` offers clothing as direct tasks. The Clothier's shop had no task at all, and the Leatherworks only

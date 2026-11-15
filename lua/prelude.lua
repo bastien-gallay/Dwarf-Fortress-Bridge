@@ -336,3 +336,41 @@ local function note_order_dates()
   end
   dfhack.persistent.saveSiteData(ORDER_DATES, dates)
 end
+
+-- What a farm plot's tiles offer a crop: light and dark tiles, and the biome of each surface tile.
+local function plot_conditions(b)
+  local c = {light = 0, dark = 0, biomes = {}}
+  for x = b.x1, b.x2 do for y = b.y1, b.y2 do
+    local f = dfhack.buildings.containsTile(b, x, y) and dfhack.maps.getTileFlags(x, y, b.z)
+    if f and not f.hidden then
+      if f.light then c.light = c.light + 1 else c.dark = c.dark + 1 end
+      if not f.subterranean then
+        local bn = try(function()
+          local rx, ry = dfhack.maps.getTileBiomeRgn(x, y, b.z)
+          return df.biome_type[dfhack.maps.getBiomeType(rx, ry)]
+        end)
+        if bn then c.biomes[bn] = (c.biomes[bn] or 0) + 1 end
+      end
+    end
+  end end
+  return c
+end
+
+-- Why a crop (plant raw) cannot grow on a plot with these conditions, or nil. A surface crop also needs the
+-- BIOME_<type> flag of the plot's biome: the game offers only those, and df_crop set used to accept the others.
+-- The game plants tile by tile; any_tile=true reports only a crop that suits none of the plot's tiles.
+local function crop_mismatch(p, c, any_tile)
+  if p.flags.BIOME_SUBTERRANEAN_WATER then
+    if c.light > 0 and not (any_tile and c.dark > 0) then return ('%s is an underground crop and needs dark tiles (%d light tile(s) here). Roofing a surface plot does not remove its Light attribute. Use a genuinely dark underground plot.'):format(p.name, c.light) end
+    return nil
+  end
+  if c.dark > 0 and not (any_tile and c.light > 0) then return ('%s is a surface crop and needs light tiles (%d dark tile(s) here): it cannot grow on an underground plot. Plant it on a surface plot, or pick an underground crop here.'):format(p.name, c.dark) end
+  local bad, total, biome = 0, 0
+  for bn, n in pairs(c.biomes) do
+    total = total + n
+    if not try(function() return p.flags['BIOME_' .. bn] end, false) then bad, biome = bad + n, bn end
+  end
+  if bad > 0 and not (any_tile and bad < total) then
+    return ('%s does not grow in the %s biome (%d tile(s) here): the game plants only crops of the plot\'s biome.'):format(p.name, biome, bad)
+  end
+end
