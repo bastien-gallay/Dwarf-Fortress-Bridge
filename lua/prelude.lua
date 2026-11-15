@@ -248,7 +248,7 @@ end
 -- A job_item filter (catalogue table or df reagent) as plain JSON-able data: fields plus flag-name lists.
 local function job_item_filter(f)
   local out = {}
-  for _, k in ipairs({'item_type', 'item_subtype', 'mat_type', 'mat_index', 'reaction_class', 'has_material_reaction_product', 'metal_ore'}) do
+  for _, k in ipairs({'item_type', 'item_subtype', 'mat_type', 'mat_index', 'reaction_class', 'has_material_reaction_product', 'metal_ore', 'min_dimension'}) do
     local ok, v = pcall(function() return f[k] end)
     if ok and v ~= nil then out[k] = v end
   end

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.18
+
+- `df_workshop` offers clothing as direct tasks. The Clothier's shop had no task at all, and the Leatherworks only
+  bags and instrument parts. Clothier: the civilisation's soft garments (robe, shirt, cloak, hood, mittens...)
+  plus bag and rope, in each kind of cloth (plant, silk, yarn) the fort holds a whole piece of. Leatherworks:
+  leather armour, cap, helm, leggings, low boots, cloak... when a tanned hide is free.
+- The Metalsmith's forge also offers bolts and anvils, per metal that allows them.
+- Checked in game: a silk shirt took one whole piece of silk, a leather cap one tanned hide, and one iron bar made
+  25 bolts. The anvil's single bar is not confirmed yet: `list` counts such tasks in `unconfirmed_cost` and `add`
+  warns to watch the first job.
+- The material check of `df_workshop add` and `df_order` no longer reports "0 usable cloth" when the fort holds
+  silk cloth (107 pieces of cave spider silk were missed), counts only whole pieces for jobs that need one, and
+  names the kind of cloth it misses ("0 usable yarn whole-piece cloth").
+
 ## 1.5.17
 
 - `df_problems` explains work orders the manager leaves unvalidated: which orders, for how long (`df_order` /
