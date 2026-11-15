@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.17
+
+- `df_problems` explains work orders the manager leaves unvalidated: which orders, for how long (`df_order` /
+  `df_upkeep` now date every order they have not seen before, including those made in the game's screens), and
+  what keeps the manager from them. In the fort that showed the problem, a 216-tile plant gathering zone kept 58
+  dwarves gathering, the manager among them, and orders stayed unvalidated for days; gathering zones pull every
+  free dwarf whatever their labors or burrow. Shrunk to 63 tiles, the zone let the waiting order through within a
+  day. The message names the zone. It also says when DFHack autolabor (legacy mode) keeps handing the manager
+  labors (it skips units in a burrow).
+- `df_labor disable` warns when autolabor will hand the labors back.
+- `df_labor action=specialize` / `unspecialize` sets the citizen sheet's "only do assigned jobs" (keeps only the
+  labors of the unit's work details); it warns that legacy autolabor ignores it.
+- `df_order` warns when the manager is gathering plants or kept busy by autolabor.
+- New regression tests in `npm test`: `df_noble repair` twice leaves the noble index the same size, and
+  `df_trade select` with an out-of-range index fails without marking anything.
+
 ## 1.5.16
 
 - `df_noble repair` (and `appoint` / `remove`) no longer duplicates the noble responsibility index. The rebuild only
