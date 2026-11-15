@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.21
+
+- `df_crop list`: `growable_seeds` is renamed `plantable_now` (the crops the plot can grow with seeds in stock: a
+  crop drops out when its seeds run out, though it still grows there), and `growable_crops` counts every crop the
+  plot could grow, seeds or not.
+
 ## 1.5.20
 
 - `df_crop set` writes a crop only into the seasons its raw lists (the game's farm panel offers it there only):
