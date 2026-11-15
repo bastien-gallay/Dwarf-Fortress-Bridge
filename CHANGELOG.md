@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.22
+
+- `df_wait` and `df_problems` report a diplomacy meeting waiting for the player. In v50 a liaison or diplomat ready
+  to meet only shows a DIPLOMACY button at the top left, announced nowhere: 5 game days passed unnoticed. The
+  bridge reads the button from the screen and names the visitors (`plotinfo.dip_meeting_info`).
+- `df_trade action=requests` reads and sets the meeting's trade requests by category name (`category=SAND`,
+  `priority` 0-4, `indices` or the whole category). The screen's tab numbers are not the categories the
+  priorities are indexed by (Sand: tab 46, priority 49), which made hand-made edits land in the wrong list.
+
 ## 1.5.21
 
 - `df_crop list`: `growable_seeds` is renamed `plantable_now` (the crops the plot can grow with seeds in stock: a
