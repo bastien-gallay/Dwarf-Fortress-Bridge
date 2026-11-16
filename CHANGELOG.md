@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.27
+
+- `df_screenshot` captures the whole game window on a scaled display (e.g. Windows at 200%). The capture asked
+  Windows for the window size without being DPI-aware, got half of it and returned only the top-left quarter of the
+  window: a view centred on x,y,z showed its target in the bottom-right corner, or not at all.
+
 ## 1.5.26
 
 - `df_screen close`, `df_ui close` and every tool that clears the screen before driving a panel (`df_petition`,
