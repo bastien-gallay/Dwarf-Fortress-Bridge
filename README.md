@@ -340,6 +340,8 @@ The bridge was written by Claude while playing; most of its tools exist because 
   `taking_requests_tablist[i]` (Sand is tab 46, priority 49). `df_trade action=requests` works by category name.
 - A spouse lodged in their partner's bedroom has it in `unit.owned_buildings`, but the zone's
   `assigned_unit_id` names only the partner. Count adults without a room through `owned_buildings`.
+- quickfort reads a zone's `(WxH)` size only when nothing before it holds a `(`: `b{name="Wing (SS3) 13"}(3x3)`
+  makes a one-tile zone without an error. `df_zone` turns parentheses in a name into brackets.
 - Tombs hold one body each: put a 1x1 tomb zone on every coffin.
 - Every location quickfort creates gets the same generated name; `df_zone` sets the requested one.
 

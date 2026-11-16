@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.24
+
+- `df_rooms audit` counts each problem once by zone type, with a few zone ids, instead of listing every flagged
+  zone: one fort went from 139 KB (164 empty one-tile tombs, 76 overlapping bedrooms) to 7 KB, under the size an
+  MCP client reads directly. `zone_type=<type>` lists every flagged zone of one type; `zone_id` and `full=true` work
+  as before. Room layouts are counted by state.
+- `df_room_plan status` without `z` or `id` counts plans by state and level; `z=` lists one level, `id=` one room,
+  `detail=true` everything. `protect` reports only the rooms it saved (it returned every plan of the fort, 82 KB).
+- `df_screenshot` lists the unfinished rooms of the level in view only (it listed every plan, about 25 KB).
+- `df_zone` no longer makes a one-tile zone when the name holds parentheses: quickfort then ignores the `(WxH)`
+  size. Parentheses become brackets, and `df_zone` fails when the zone covers fewer tiles than asked.
+
 ## 1.5.23
 
 - `df_rooms audit` and the `zone` phase of `bedroom_wing` no longer take a lodged spouse for homeless. The game
