@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.26
+
+- `df_screen close`, `df_ui close` and every tool that clears the screen before driving a panel (`df_petition`,
+  `df_ui open`, the display and priesthood actions) also drop a bottom toolbar tool left open (mining, building,
+  zones...). It is drawn over the panels and took their clicks: `df_petition approve` answered "Petition buttons not
+  found on screen" while the mining tool was open.
+
 ## 1.5.25
 
 - `df_petition list` details a temple or guildhall request: location type, tier, the guild's profession or the
