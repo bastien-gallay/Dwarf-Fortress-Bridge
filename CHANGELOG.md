@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.23
+
+- `df_rooms audit` and the `zone` phase of `bedroom_wing` no longer take a lodged spouse for homeless. The game
+  lodges a spouse in their partner's bedroom and lists it in the spouse's `owned_buildings`, while the zone names
+  only the partner: one fort counted 88 adults without a room instead of 71. The `zone` phase now assigns by unit id
+  (two citizens with the same name no longer hide each other) and gives one room per couple.
+
 ## 1.5.22
 
 - `df_wait` and `df_problems` report a diplomacy meeting waiting for the player. In v50 a liaison or diplomat ready

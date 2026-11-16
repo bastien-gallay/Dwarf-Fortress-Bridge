@@ -338,6 +338,8 @@ The bridge was written by Claude while playing; most of its tools exist because 
   meeting waits until it is clicked. `df_wait` and `df_problems` report the button.
 - On the meeting's trade requests screen, tab numbers are not `entity_sell_category` values: tab i shows category
   `taking_requests_tablist[i]` (Sand is tab 46, priority 49). `df_trade action=requests` works by category name.
+- A spouse lodged in their partner's bedroom has it in `unit.owned_buildings`, but the zone's
+  `assigned_unit_id` names only the partner. Count adults without a room through `owned_buildings`.
 - Tombs hold one body each: put a 1x1 tomb zone on every coffin.
 - Every location quickfort creates gets the same generated name; `df_zone` sets the requested one.
 
