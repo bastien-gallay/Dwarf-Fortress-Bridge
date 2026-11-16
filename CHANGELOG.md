@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.25
+
+- `df_petition list` details a temple or guildhall request: location type, tier, the guild's profession or the
+  deity, the fort's locations of that kind with their tier and value, and the group's earlier requests. It said only
+  `wants: ["Location"]`, so a guild asking five times for the same guildhall went unexplained (its guildhall was at
+  tier 0). The listing moved to `lua/petition.lua`.
+
 ## 1.5.24
 
 - `df_rooms audit` counts each problem once by zone type, with a few zone ids, instead of listing every flagged
