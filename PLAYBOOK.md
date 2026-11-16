@@ -188,6 +188,9 @@ If something seems impossible without a cheat, tell the player instead.
   `df_levers` and prefer a real barrier for sieges: a raising drawbridge (`df_build key=ga/gw/gd/gx`) in the entrance,
   linked to a lever inside (`df_levers link`, 2 mechanisms; the lever itself needs 1); `df_levers pull` raises it into
   a wall nothing can open. Hatches over a cavern shaft go on a lever the same way, so no lock has to hold.
+  A door or hatch linked to a lever follows the lever: a lock does not hold, the mechanism opens it again; pull the
+  lever instead. Pull it BEFORE `alert_on`, or put the lever inside the alert burrow: during a civil alert a pull job
+  on a lever outside the burrow is cancelled ("Forbidden area").
   A raised bridge is not a seal if the shaft behind it is open to the sky: invaders (undead too) CLIMB walls in v50,
   walk the wall tops one level up and drop in. Roof every stair top and enclosure (`Cf` on the open tiles one level
   above; builders need a way up, e.g. a temporary ramp `Cr` against the wall, removed afterwards) and look for any
