@@ -270,6 +270,7 @@ artifacts and sieges (photographed), and every line a dwarf says. What it cannot
   remains hidden. Water glyphs take precedence over stockpile symbols.
 
 - `df_ui` opens/closes the game's panels, presses buttons and ticks squads; `df_screen` read/find/click/key for anything else.
-- Panels (trade, squads, petitions) ignore Esc from scripts and some freeze time: `df_ui close`.
+- Panels (trade, squads, petitions) ignore Esc from scripts and some freeze time: `df_ui close`. It also drops a bottom
+  toolbar tool left open (mining, building, zones...), which is drawn over the panels and takes their clicks.
 - Strange moods: `df_mood` (and `check=true` to see whether the needed items exist). `df_pile` for stockpile presets and links,
   `df_kitchen`, `df_auto` for automation plugins. `df_lua` runs raw DFHack Lua (call `emit(v)` to return data).
