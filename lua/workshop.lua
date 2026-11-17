@@ -75,11 +75,25 @@ local function forge_tasks()
       items = {{item_type = df.item_type.BAR, item_subtype = -1, mat_type = 0, mat_index = mat_index,
         quantity = 150 * nbars, vector_id = df.job_item_vector_id.BAR}}})
   end
+  -- One bar: confirmed for bolts (1 iron bar made 25 bolts); not yet for anvils.
+  local function bar_task(name, job_type, subtype, mat_index, unconfirmed)
+    table.insert(out, {name = name, unconfirmed = unconfirmed, job_fields = {job_type = df.job_type[job_type],
+      item_subtype = subtype, mat_type = 0, mat_index = mat_index},
+      items = {{item_type = df.item_type.BAR, item_subtype = -1, mat_type = 0, mat_index = mat_index,
+        quantity = 150, vector_id = df.job_item_vector_id.BAR}}})
+  end
   for mat_index, count in pairs(bars) do
     local inorg = df.inorganic_raw.find(mat_index)
     local flags = inorg and inorg.material.flags
     if flags and count > 0 then
       local metal = dfhack.df2utf(inorg.material.state_name.Solid)
+      if flags.ITEMS_AMMO and res then
+        for _, st in ipairs(res.ammo_type) do
+          local def = df.global.world.raws.itemdefs.ammo[st]
+          if def then bar_task('forge ' .. metal .. ' ' .. def.name_plural, 'MakeAmmo', st, mat_index) end
+        end
+      end
+      if flags.ITEMS_ANVIL then bar_task('forge ' .. metal .. ' anvil', 'ForgeAnvil', -1, mat_index, true) end
       for _, k in ipairs(kinds) do
         if flags[k.flag] and res then
           for _, st in ipairs(res[k.res]) do
@@ -91,6 +105,66 @@ local function forge_tasks()
           end
         end
       end
+    end
+  end
+  return out
+end
+-- dfhack.workshops has no clothing at all: nothing for the Clothier's shop, only bags and instrument parts for the
+-- Leatherworks. Offer the civilisation's own garments, as the game does: SOFT items in each cloth the fort holds
+-- a whole piece of (10000; smaller pieces are cut-offs), LEATHER items from tanned hides. Confirmed in game: a
+-- silk shirt took one whole piece of silk, a leather cap one hide.
+local CLOTHES = {{'armor_type', 'armor', 'MakeArmor'}, {'helm_type', 'helms', 'MakeHelm'},
+  {'pants_type', 'pants', 'MakePants'}, {'gloves_type', 'gloves', 'MakeGloves'}, {'shoes_type', 'shoes', 'MakeShoes'}}
+local CLOTHS = { -- material category, job item flag, material flag, name
+  {cat = 'cloth', flag = 'plant', mat = 'THREAD_PLANT', name = 'cloth'},
+  {cat = 'silk', flag = 'silk', mat = 'SILK', name = 'silk'},
+  {cat = 'yarn', flag = 'yarn', mat = 'YARN', name = 'yarn'},
+}
+local function garment_tasks(leather)
+  local ent = df.historical_entity.find(df.global.plotinfo.civ_id)
+  local res = ent and ent.resources
+  if not res then return {} end
+  local kinds = {}
+  if leather then
+    local free = false
+    for _, it in ipairs(df.global.world.items.other.SKIN_TANNED) do
+      if not it.flags.forbid and not it.flags.in_job then free = true break end
+    end
+    if free then kinds[1] = {cat = 'leather', name = 'leather', prop = 'LEATHER',
+      item = {item_type = df.item_type.SKIN_TANNED, item_subtype = -1, mat_type = -1, mat_index = -1, quantity = 1,
+        vector_id = df.job_item_vector_id.SKIN_TANNED}} end
+  else
+    local have = {}
+    for _, it in ipairs(df.global.world.items.other.CLOTH) do
+      local mi = it.dimension >= 10000 and not it.flags.forbid and not it.flags.in_job and dfhack.matinfo.decode(it)
+      if mi then for _, c in ipairs(CLOTHS) do if mi.material.flags[c.mat] then have[c.cat] = true end end end
+    end
+    for _, c in ipairs(CLOTHS) do
+      if have[c.cat] then table.insert(kinds, {cat = c.cat, name = c.name, prop = 'SOFT',
+        item = {item_type = df.item_type.CLOTH, item_subtype = -1, mat_type = -1, mat_index = -1, quantity = 10000,
+          min_dimension = 10000, flags2 = {[c.flag] = true}, vector_id = df.job_item_vector_id.CLOTH}}) end
+    end
+  end
+  local out = {}
+  local function add(name, job_type, subtype, k)
+    table.insert(out, {name = name, job_fields = {job_type = df.job_type[job_type],
+      item_subtype = subtype, material_category = {[k.cat] = true}}, items = {utils.clone(k.item, true)}})
+  end
+  for _, k in ipairs(kinds) do
+    for _, c in ipairs(CLOTHES) do
+      for _, st in ipairs(res[c[1]]) do
+        local def = df.global.world.raws.itemdefs[c[2]][st]
+        if def and try(function() return def.props.flags[k.prop] end, false) then
+          -- gloves and shoes come in pairs: the game names those jobs in the plural
+          local n = (c[1] == 'gloves_type' or c[1] == 'shoes_type') and def.name_plural or def.name
+          local item = n:find('^' .. k.name) and n or (k.name .. ' ' .. n)
+          add('make ' .. item, c[3], st, k)
+        end
+      end
+    end
+    if not leather then
+      add('make ' .. k.name .. ' bag', 'ConstructBag', -1, k)
+      add('make ' .. k.name .. ' rope', 'MakeChain', -1, k)
     end
   end
   return out
@@ -110,6 +184,9 @@ local function task_list(b)
   for _, j in ipairs(sub and EXTRA[sub] or {}) do table.insert(list, j) end
   if sub == 'MetalsmithsForge' or sub == 'MagmaForge' then
     for _, j in ipairs(forge_tasks()) do table.insert(list, j) end
+  end
+  if sub == 'Clothiers' or sub == 'Leatherworks' then
+    for _, j in ipairs(garment_tasks(sub == 'Leatherworks')) do table.insert(list, j) end
   end
   table.sort(list, function(a, c) return a.name < c.name end)
   return list
@@ -139,7 +216,13 @@ if action == 'list' then
         entry.tasks = {}
         local flt = ARGS.filter and ARGS.filter:lower()
         for _, t in ipairs(task_list(b)) do
-          if not flt or t.name:lower():find(flt, 1, true) then table.insert(entry.tasks, dfhack.df2utf(t.name)) end
+          if not flt or t.name:lower():find(flt, 1, true) then
+            table.insert(entry.tasks, dfhack.df2utf(t.name))
+            if t.unconfirmed then entry.unconfirmed_cost = (entry.unconfirmed_cost or 0) + 1 end
+          end
+        end
+        if entry.unconfirmed_cost then
+          entry.unconfirmed_note = ('%d of these tasks (anvils) use a material amount not yet confirmed in game: check the first one finishes and uses one bar.'):format(entry.unconfirmed_cost)
         end
         if #entry.tasks == 0 and not flt then
           entry.tasks_note = 'No task catalogue for this workshop type; queue its products with df_order instead.'
@@ -231,7 +314,8 @@ if action == 'add' then
   local inputs = {}
   for _, item in ipairs(pick.items or {}) do table.insert(inputs, job_item_filter(item)) end
   local magma = df.building_furnacest:is_instance(b) and df.furnace_type[b.type]:find('^Magma') ~= nil
-  emit({ok = true, added = dfhack.df2utf(pick.name), count = count, note = clamped, jobs = queued(b),
+  local unconfirmed = pick.unconfirmed and 'Material amount not yet confirmed in game: watch the first job; if it never starts or wastes material, cancel it and report it.' or nil
+  emit({ok = true, added = dfhack.df2utf(pick.name), count = count, note = clamped, warning = unconfirmed, jobs = queued(b),
     preflight = {items = inputs, building_id = b.id, magma = magma,
       job_type = pick.job_fields and pick.job_fields.job_type or nil}}) return
 end
