@@ -64,16 +64,18 @@ if (ARGS.action or 'list') == 'list' then
       end
     end
   end
-  -- each plot names the stocked seeds it can grow; seeds no plot can grow are only counted
+  -- each plot names the crops it can grow with seeds in stock now, and counts all it could grow;
+  -- seeds no plot can grow are only counted
   local fits = {}
   for i, p in ipairs(plots) do
     local ok = growable(conds[i])
-    local names = {}
+    local names, n = {}, 0
+    for _ in pairs(ok) do n = n + 1 end
     for _, v in pairs(seeds) do
       if ok[v.index] then names[#names + 1] = v.name fits[v.id] = true end
     end
     table.sort(names)
-    p.growable_seeds = names
+    p.plantable_now, p.growable_crops = names, n
   end
   local list, other = {}, 0
   for k, v in pairs(seeds) do
