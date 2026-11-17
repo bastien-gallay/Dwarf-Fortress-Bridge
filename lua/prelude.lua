@@ -193,6 +193,20 @@ local function plot_conditions(b)
   return c
 end
 
+-- A crop is planted only in the seasons its raw lists (the game's farm panel offers it there only);
+-- df_crop set used to write it into any season. s is the plot's season index, 0 = spring.
+local SEASON_FLAGS = {[0] = 'SPRING', 'SUMMER', 'AUTUMN', 'WINTER'}
+local function crop_seasons(p)
+  local l = {}
+  for s = 0, 3 do if p.flags[SEASON_FLAGS[s]] then l[#l + 1] = SEASON_FLAGS[s]:lower() end end
+  return l
+end
+local function off_season(p, s)
+  if p.flags[SEASON_FLAGS[s]] then return nil end
+  local l = crop_seasons(p)
+  return ('%s is not planted in %s (its seasons: %s).'):format(p.name, SEASON_FLAGS[s]:lower(), #l > 0 and table.concat(l, ', ') or 'none')
+end
+
 -- Why a crop (plant raw) cannot grow on a plot with these conditions, or nil. A surface crop also needs the
 -- BIOME_<type> flag of the plot's biome: the game offers only those, and df_crop set used to accept the others.
 -- The game plants tile by tile; any_tile=true reports only a crop that suits none of the plot's tiles.

@@ -28,7 +28,7 @@ local function plot_info(b)
   for s = 0, 3 do
     local pi = b.plant_id[s]
     crops[SEASONS[s + 1]] = pi >= 0 and plants[pi] and plants[pi].name or 'fallow'
-    local why = pi >= 0 and plants[pi] and crop_mismatch(plants[pi], c)
+    local why = pi >= 0 and plants[pi] and (crop_mismatch(plants[pi], c) or off_season(plants[pi], s))
     if why then incompatible[#incompatible + 1] = {season = SEASONS[s + 1], crop = plants[pi].name, reason = why} end
   end
   local biomes = {}
@@ -119,19 +119,32 @@ if pid >= 0 then
   local why = crop_mismatch(plants[pid], plot_conditions(b))
   if why then emit({error = 'Crop cannot grow on this plot. ' .. why, plot = plot_info(b)}) return end
 end
+-- seasons outside the crop's own are left as they were: nothing would be planted there
+local set, skipped = {}, {}
 for _, s in ipairs(seasons) do
   for i, name in ipairs(SEASONS) do
-    if name == s:lower() then b.plant_id[i - 1] = pid end
+    if name == s:lower() then
+      if pid >= 0 and off_season(plants[pid], i - 1) then skipped[#skipped + 1] = name else set[#set + 1] = i - 1 end
+    end
   end
 end
+if #set == 0 and #skipped > 0 then
+  emit({error = ('%s is planted only in %s, not in %s: nothing changed.'):format(plants[pid].name,
+    table.concat(crop_seasons(plants[pid]), ', '), table.concat(skipped, ', ')), plot = plot_info(b)}) return
+end
+for _, s in ipairs(set) do b.plant_id[s] = pid end
+local warnings = {}
+if #skipped > 0 then
+  warnings[#warnings + 1] = ('%s is planted only in %s: left %s unchanged.'):format(plants[pid].name,
+    table.concat(crop_seasons(plants[pid]), ', '), table.concat(skipped, ', '))
+end
 -- A crop with no seeds in stock is set without complaint, and farmers then cancel "Plant seeds" over and over.
-local warning
 if pid >= 0 then
   local n = 0
   for _, it in ipairs(df.global.world.items.other.SEEDS) do
     local mi = dfhack.matinfo.decode(it)
     if mi and mi.plant and mi.index == pid and not it.flags.forbid and not it.flags.rotten and not it.flags.in_building then n = n + it.stack_size end
   end
-  if n == 0 then warning = ('No %s seeds in stock: farmers will cancel planting. Pick a crop from seeds_in_stock (df_crop list) or buy seeds.'):format(plants[pid].name) end
+  if n == 0 then warnings[#warnings + 1] = ('No %s seeds in stock: farmers will cancel planting. Pick a crop from seeds_in_stock (df_crop list) or buy seeds.'):format(plants[pid].name) end
 end
-emit({ok = true, plot = plot_info(b), plant = pid >= 0 and plant_info(pid) or 'fallow', warning = warning})
+emit({ok = true, plot = plot_info(b), plant = pid >= 0 and plant_info(pid) or 'fallow', warning = #warnings > 0 and table.concat(warnings, ' ') or nil})
